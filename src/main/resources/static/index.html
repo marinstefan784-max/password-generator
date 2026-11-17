@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <title>Secure Password Generator</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f8f9fa; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 350px; }
+        h2 { font-size: 1.2rem; color: #3c4043; margin-bottom: 20px; text-align: center; }
+        .password-box { font-family: monospace; font-size: 1.5rem; padding: 15px; width: 90%; border: 2px solid #dadce0; border-radius: 8px; background: #f1f3f4; color: #202124; text-align: center; margin-bottom: 20px; outline: none; }
+        .options { margin-bottom: 20px; text-align: left; }
+        .option-group { margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+        .buttons { display: flex; gap: 10px; justify-content: center; }
+        button { padding: 10px 20px; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: 500; transition: 0.2s; }
+        .btn-regen { background: white; color: #1a73e8; border: 1px solid #dadce0; }
+        .btn-regen:hover { background: #f8f9fa; }
+        .btn-accept { background: #1a73e8; color: white; }
+        .btn-accept:hover { background: #1557b0; }
+        #status { margin-top: 15px; color: #188038; font-size: 0.9rem; display: none; text-align: center; }
+        #lengthValue { font-weight: bold; color: #1a73e8; }
+    </style>
+</head>
+<body>
+
+<!-- Main password-generation panel and its controls. -->
+<div class="card">
+    <h2>Your password is:</h2>
+    <input type="text" id="passDisplay" class="password-box" readonly>
+
+    <div class="options">
+        <div class="option-group">
+            <label for="lengthSlider">Length: <span id="lengthValue">12</span></label>
+            <input type="range" id="lengthSlider" min="8" max="32" value="12" oninput="document.getElementById('lengthValue').innerText = this.value">
+        </div>
+        <div class="option-group">
+            <label for="chkUpper">Uppercase letters</label>
+            <input type="checkbox" id="chkUpper" checked>
+        </div>
+        <div class="option-group">
+            <label for="chkLower">Lowercase letters</label>
+            <input type="checkbox" id="chkLower" checked>
+        </div>
+        <div class="option-group">
+            <label for="chkNumbers">Numbers</label>
+            <input type="checkbox" id="chkNumbers" checked>
+        </div>
+        <div class="option-group">
+            <label for="chkSymbols">Symbols</label>
+            <input type="checkbox" id="chkSymbols" checked>
+        </div>
+    </div>
+
+    <div class="buttons">
+        <button class="btn-regen" onclick="generate()">🔄 Regenerează</button>
+        <button class="btn-accept" onclick="accept()">✅ Acceptă</button>
+    </div>
+    <div id="status">The password has been saved!</div>
+</div>
+
+<script>
+    // Request a password using the current length and character-group selections.
+    async function generate() {
+        // Read the current values from the interface.
+        const params = new URLSearchParams({
+            length: document.getElementById('lengthSlider').value,
+            uppercase: document.getElementById('chkUpper').checked,
+            lowercase: document.getElementById('chkLower').checked,
+            numbers: document.getElementById('chkNumbers').checked,
+            symbols: document.getElementById('chkSymbols').checked
+        });
+
+        // Send a GET request with the options encoded in the URL.
+        const response = await fetch(`/api/generate?${params.toString()}`);
+        const data = await response.json();
+
+        document.getElementById('passDisplay').value = data.password;
+        document.getElementById('status').style.display = 'none';
+    }
+
+    // Submit the displayed password for hashing and storage by the application.
+    async function accept() {
+        const currentPassword = document.getElementById('passDisplay').value;
+        if(!currentPassword) return;
+
+        await fetch('/api/accept', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: currentPassword })
+        });
+
+        document.getElementById('status').style.display = 'block';
+    }
+
+    // Populate the password field as soon as the page loads.
+    generate();
+</script>
+</body>
+</html>
